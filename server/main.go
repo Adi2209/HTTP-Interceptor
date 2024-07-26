@@ -1,41 +1,30 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"io"
+	"log"
 	"net/http"
-	"os"
-
-	"github.com/golang/snappy"
 )
 
 func main() {
-	http.HandleFunc("/", handler)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api1", apiHandler1)
+	mux.HandleFunc("/api2", apiHandler2)
+
+	compressionMiddleware := compressionInterceptor(mux)
+
 	fmt.Println("Server is listening on port 8080...")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		fmt.Printf("Failed to start server: %v\n", err)
-		os.Exit(1)
+	if err := http.ListenAndServe(":8080", compressionMiddleware); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	response := "Hello, this is a Snappy compressed response!"
+func apiHandler1(w http.ResponseWriter, r *http.Request) {
+	response := "Hello from API 1!"
+	w.Write([]byte(response))
+}
 
-	if r.Header.Get("Accept-Encoding") == "snappy" {
-		var buf bytes.Buffer
-		snappyWriter := snappy.NewBufferedWriter(&buf)
-		if _, err := snappyWriter.Write([]byte(response)); err != nil {
-			http.Error(w, "Failed to write snappy response", http.StatusInternalServerError)
-			return
-		}
-		snappyWriter.Close()
-
-		w.Header().Set("Content-Encoding", "snappy")
-		w.WriteHeader(http.StatusOK)
-		io.Copy(w, &buf)
-	} else {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(response))
-	}
+func apiHandler2(w http.ResponseWriter, r *http.Request) {
+	response := "Hello from API 2!"
+	w.Write([]byte(response))
 }

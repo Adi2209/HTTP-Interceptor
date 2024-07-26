@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	url := "http://localhost:8080"
+	url := "http://localhost:8080/api1"
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		fmt.Printf("Failed to create request: %v\n", err)
